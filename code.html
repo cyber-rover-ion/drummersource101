@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>CYBERDRUM VST - Virtual Drum Kit</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed": "#7df4ff",
+            "surface-container": "#1f1f25",
+            "secondary-container": "#ff4a8d",
+            "on-secondary": "#65002e",
+            "error-container": "#93000a",
+            "on-tertiary-container": "#7d5800",
+            "primary-container": "#00f0ff",
+            "primary": "#dbfcff",
+            "on-surface-variant": "#b9cacb",
+            "surface-tint": "#00dbe9",
+            "tertiary-container": "#ffd387",
+            "secondary-fixed-dim": "#ffb1c4",
+            "on-error": "#690005",
+            "surface-container-highest": "#35343a",
+            "on-tertiary-fixed": "#271900",
+            "primary-fixed-dim": "#00dbe9",
+            "error": "#ffb4ab",
+            "surface": "#131318",
+            "tertiary-fixed": "#ffdea9",
+            "on-secondary-container": "#590028",
+            "tertiary-fixed-dim": "#ffba26",
+            "surface-container-lowest": "#0e0e13",
+            "on-tertiary": "#422d00",
+            "surface-container-high": "#2a292f",
+            "on-tertiary-fixed-variant": "#5e4100",
+            "on-background": "#e4e1e9",
+            "inverse-on-surface": "#303036",
+            "surface-container-low": "#1b1b20",
+            "on-primary": "#00363a",
+            "background": "#131318",
+            "on-primary-fixed-variant": "#004f54",
+            "surface-variant": "#35343a",
+            "surface-bright": "#39383e",
+            "tertiary": "#fff4e8",
+            "inverse-primary": "#006970",
+            "on-error-container": "#ffdad6",
+            "outline": "#849495",
+            "secondary-fixed": "#ffd9e1",
+            "on-surface": "#e4e1e9",
+            "secondary": "#ffb1c4",
+            "on-secondary-fixed-variant": "#8f0044",
+            "on-primary-fixed": "#002022",
+            "on-primary-container": "#006970",
+            "outline-variant": "#3b494b",
+            "inverse-surface": "#e4e1e9",
+            "surface-dim": "#131318",
+            "on-secondary-fixed": "#3f001a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "headline-md": ["Space Grotesk"],
+            "headline-xl": ["Space Grotesk"],
+            "headline-xl-mobile": ["Space Grotesk"],
+            "label-md": ["JetBrains Mono"],
+            "body-lg": ["Space Grotesk"],
+            "headline-lg": ["Space Grotesk"],
+            "label-lg": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "body-md": ["Space Grotesk"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* Physical 3D Rim and Drum Head Assembly */
+    .drum-pad-wrapper {
+      perspective: 700px;
+      touch-action: manipulation;
+    }
+    
+    .drum-pad-chassis {
+      background: radial-gradient(circle at 45% 35%, #252733 0%, #171822 55%, #0d0e14 100%);
+      box-shadow: 
+        0 14px 28px -6px rgba(0, 0, 0, 0.95),
+        0 4px 8px rgba(0, 0, 0, 0.7),
+        inset 0 2px 3px rgba(255, 255, 255, 0.16),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      transition: transform 75ms cubic-bezier(0.1, 0.9, 0.2, 1), box-shadow 75ms ease;
+      will-change: transform, box-shadow;
+    }
+
+    .drum-membrane {
+      background: 
+        radial-gradient(circle at 50% 50%, #1c1e29 0%, #14151e 58%, #090a0e 100%),
+        repeating-radial-gradient(circle at center, transparent 0, transparent 4px, rgba(255, 255, 255, 0.02) 5px, transparent 6px);
+      box-shadow: 
+        inset 0 6px 14px rgba(0, 0, 0, 0.98),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.6);
+      transition: filter 70ms ease, background-color 70ms ease;
+    }
+
+    /* Fast Expanding Impact Ripple Ring */
+    .drum-ripple {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      border-radius: 9999px;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.35);
+      border: 2px solid currentColor;
+      transition: transform 160ms cubic-bezier(0.1, 0.8, 0.25, 1), opacity 160ms ease-out;
+    }
+
+    .drum-ripple.active-ripple {
+      opacity: 0.9;
+      transform: scale(1.02);
+      transition: none;
+    }
+
+    .drum-flash-highlight {
+      opacity: 0;
+      transition: opacity 140ms ease-out;
+    }
+
+    /* 3D Physical Depression Hits */
+    .pad-pressed .drum-pad-chassis {
+      transform: perspective(600px) translateZ(-9px) translateY(4px) scale(0.97) !important;
+      box-shadow: 
+        0 4px 10px rgba(0, 0, 0, 0.85),
+        inset 0 3px 6px rgba(0, 0, 0, 0.9),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .pad-pressed .drum-flash-highlight {
+      opacity: 0.45 !important;
+      transition: none;
+    }
+
+    /* Color-specific glow accents on strike */
+    .pad-cyan.pad-pressed .drum-membrane {
+      box-shadow: inset 0 0 25px rgba(0, 240, 255, 0.5), inset 0 6px 14px rgba(0, 0, 0, 0.9);
+      border-color: rgba(0, 240, 255, 0.9) !important;
+    }
+    .pad-cyan.pad-pressed .pad-badge {
+      box-shadow: 0 0 14px #00f0ff;
+      background-color: #00f0ff;
+      color: #002022 !important;
+    }
+    .pad-cyan.pad-pressed .drum-pad-chassis {
+      box-shadow: 0 0 24px rgba(0, 240, 255, 0.5), 0 4px 10px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    .pad-pink.pad-pressed .drum-membrane {
+      box-shadow: inset 0 0 25px rgba(255, 74, 141, 0.55), inset 0 6px 14px rgba(0, 0, 0, 0.9);
+      border-color: rgba(255, 74, 141, 0.9) !important;
+    }
+    .pad-pink.pad-pressed .pad-badge {
+      box-shadow: 0 0 14px #ff4a8d;
+      background-color: #ff4a8d;
+      color: #3f001a !important;
+    }
+    .pad-pink.pad-pressed .drum-pad-chassis {
+      box-shadow: 0 0 24px rgba(255, 74, 141, 0.5), 0 4px 10px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    .pad-amber.pad-pressed .drum-membrane {
+      box-shadow: inset 0 0 25px rgba(255, 186, 38, 0.55), inset 0 6px 14px rgba(0, 0, 0, 0.9);
+      border-color: rgba(255, 186, 38, 0.9) !important;
+    }
+    .pad-amber.pad-pressed .pad-badge {
+      box-shadow: 0 0 14px #ffba26;
+      background-color: #ffba26;
+      color: #271900 !important;
+    }
+    .pad-amber.pad-pressed .drum-pad-chassis {
+      box-shadow: 0 0 24px rgba(255, 186, 38, 0.5), 0 4px 10px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    .pad-peach.pad-pressed .drum-membrane {
+      box-shadow: inset 0 0 25px rgba(255, 222, 169, 0.55), inset 0 6px 14px rgba(0, 0, 0, 0.9);
+      border-color: rgba(255, 222, 169, 0.9) !important;
+    }
+    .pad-peach.pad-pressed .pad-badge {
+      box-shadow: 0 0 14px #ffdea9;
+      background-color: #ffdea9;
+      color: #271900 !important;
+    }
+    .pad-peach.pad-pressed .drum-pad-chassis {
+      box-shadow: 0 0 24px rgba(255, 222, 169, 0.5), 0 4px 10px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    .pad-mint.pad-pressed .drum-membrane {
+      box-shadow: inset 0 0 25px rgba(125, 244, 255, 0.55), inset 0 6px 14px rgba(0, 0, 0, 0.9);
+      border-color: rgba(125, 244, 255, 0.9) !important;
+    }
+    .pad-mint.pad-pressed .pad-badge {
+      box-shadow: 0 0 14px #7df4ff;
+      background-color: #7df4ff;
+      color: #002022 !important;
+    }
+    .pad-mint.pad-pressed .drum-pad-chassis {
+      box-shadow: 0 0 24px rgba(125, 244, 255, 0.5), 0 4px 10px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    .pad-rose.pad-pressed .drum-membrane {
+      box-shadow: inset 0 0 25px rgba(255, 217, 225, 0.55), inset 0 6px 14px rgba(0, 0, 0, 0.9);
+      border-color: rgba(255, 217, 225, 0.9) !important;
+    }
+    .pad-rose.pad-pressed .pad-badge {
+      box-shadow: 0 0 14px #ffd9e1;
+      background-color: #ffd9e1;
+      color: #3f001a !important;
+    }
+    .pad-rose.pad-pressed .drum-pad-chassis {
+      box-shadow: 0 0 24px rgba(255, 217, 225, 0.5), 0 4px 10px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    /* Range Slider Styling */
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 9999px;
+      background: #00f0ff;
+      border: 3px solid #0e0e13;
+      box-shadow: 0 0 10px #00f0ff, 0 0 2px #ffffff;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 9999px;
+      background: #00f0ff;
+      border: 3px solid #0e0e13;
+      box-shadow: 0 0 10px #00f0ff;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col justify-between overflow-x-hidden select-none font-body-md antialiased">
+<!-- TOP APP BAR -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-12 bg-surface-container-lowest/95 backdrop-blur-md border-b border-outline-variant/60">
+<div class="flex items-center gap-3">
+<span class="text-headline-md font-headline-md tracking-wider text-primary-container font-extrabold flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-primary-container animate-pulse shadow-[0_0_8px_#00f0ff]"></span>
+      CYBERDRUM VST
+    </span>
+<div class="hidden sm:flex items-center gap-2 pl-3 border-l border-outline-variant/60">
+<span class="flex items-center gap-1 text-label-sm font-label-sm text-primary-fixed" id="engine-status">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+        AUDIO ENGINE READY
+      </span>
+<span class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/50">
+        LATENCY &lt; 4ms
+      </span>
+</div>
+</div>
+<nav class="hidden md:flex items-center space-x-6">
+<button class="text-primary-container border-b-2 border-primary-container pb-1 text-label-md font-label-md font-semibold tracking-wider">
+      KIT SELECT
+    </button>
+<button class="text-on-surface-variant pb-1 text-label-md font-label-md hover:text-primary transition-colors tracking-wider">
+      PRESETS
+    </button>
+<button class="text-on-surface-variant pb-1 text-label-md font-label-md hover:text-primary transition-colors tracking-wider">
+      MIDI IN
+    </button>
+</nav>
+<div class="flex items-center gap-3">
+<div class="hidden lg:flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded border border-outline-variant/60">
+<span>KEYS:</span>
+<span class="text-primary-container font-semibold">[A, S, D, J, K, L]</span>
+</div>
+<button class="flex items-center gap-1.5 px-2.5 py-1 bg-surface-container-high text-secondary-container rounded border border-secondary-container/80 hover:bg-secondary-container hover:text-on-secondary active:scale-95 duration-100 text-label-md font-label-md">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-ping"></span>
+      RECORD
+    </button>
+<button aria-label="Settings" class="text-on-surface-variant hover:text-primary-container transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+</button>
+<button aria-label="Audio Output" class="text-on-surface-variant hover:text-primary-container transition-colors active:scale-95" id="audio-init-btn">
+<span class="material-symbols-outlined text-[18px]">volume_up</span>
+</button>
+</div>
+</header>
+<!-- MAIN INSTRUMENT SURFACE -->
+<main class="w-full flex-1 flex flex-col justify-center items-center px-3 pt-14 pb-20 max-w-5xl mx-auto">
+<!-- Tactile 3D Drum Pad Matrix (3 Rows × 2 Columns) -->
+<div class="w-full grid grid-cols-2 gap-3 sm:gap-6 md:gap-8 max-w-3xl my-auto">
+<!-- PAD 1: KICK (Row 1, Left | Key A) -->
+<div class="drum-pad-wrapper flex justify-center items-center">
+<button aria-label="Kick Drum (Key A)" class="drum-pad pad-cyan group relative w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-full drum-pad-chassis p-2.5 focus:outline-none cursor-pointer" data-key="A" data-note="kick" id="pad-A">
+<div class="w-full h-full rounded-full drum-membrane flex flex-col items-center justify-between p-3.5 sm:p-5 border-2 border-outline-variant/50 group-hover:border-primary-container/70 transition-colors relative overflow-hidden">
+<!-- Light impact flash & ripple -->
+<div class="drum-flash-highlight absolute inset-0 bg-primary-container rounded-full pointer-events-none"></div>
+<div class="drum-ripple text-primary-container" id="ripple-A"></div>
+<div class="w-full flex justify-between items-center z-10">
+<span class="text-label-sm font-label-sm text-primary-container tracking-wider font-semibold">CYAN-01</span>
+<span class="pad-badge px-2 py-0.5 rounded-full bg-surface-container-high border border-primary-container/50 text-primary-container text-label-sm font-label-sm font-bold shadow-[0_0_6px_rgba(0,240,255,0.35)] transition-all">
+              A
+            </span>
+</div>
+<div class="flex flex-col items-center justify-center z-10">
+<div class="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-primary-container/20 border border-primary-container flex items-center justify-center mb-1 shadow-[0_0_8px_#00f0ff]">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<span class="text-headline-md font-headline-md sm:text-headline-lg sm:font-headline-lg font-bold tracking-wider text-on-surface group-hover:text-primary-container transition-colors">
+              KICK
+            </span>
+</div>
+<div class="z-10 flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant font-medium">
+<span>SUB: 48Hz</span>
+</div>
+</div>
+</button>
+</div>
+<!-- PAD 2: SNARE (Row 1, Right | Key S) -->
+<div class="drum-pad-wrapper flex justify-center items-center">
+<button aria-label="Snare Drum (Key S)" class="drum-pad pad-pink group relative w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-full drum-pad-chassis p-2.5 focus:outline-none cursor-pointer" data-key="S" data-note="snare" id="pad-S">
+<div class="w-full h-full rounded-full drum-membrane flex flex-col items-center justify-between p-3.5 sm:p-5 border-2 border-outline-variant/50 group-hover:border-secondary-container/70 transition-colors relative overflow-hidden">
+<div class="drum-flash-highlight absolute inset-0 bg-secondary-container rounded-full pointer-events-none"></div>
+<div class="drum-ripple text-secondary-container" id="ripple-S"></div>
+<div class="w-full flex justify-between items-center z-10">
+<span class="text-label-sm font-label-sm text-secondary-container tracking-wider font-semibold">INDIGO-02</span>
+<span class="pad-badge px-2 py-0.5 rounded-full bg-surface-container-high border border-secondary-container/50 text-secondary-container text-label-sm font-label-sm font-bold shadow-[0_0_6px_rgba(255,74,141,0.35)] transition-all">
+              S
+            </span>
+</div>
+<div class="flex flex-col items-center justify-center z-10">
+<div class="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-secondary-container/20 border border-secondary-container flex items-center justify-center mb-1 shadow-[0_0_8px_#ff4a8d]">
+<div class="w-1.5 h-1.5 rounded-full bg-secondary-container"></div>
+</div>
+<span class="text-headline-md font-headline-md sm:text-headline-lg sm:font-headline-lg font-bold tracking-wider text-on-surface group-hover:text-secondary-container transition-colors">
+              SNARE
+            </span>
+</div>
+<div class="z-10 flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant font-medium">
+<span>SNAP: DUAL</span>
+</div>
+</div>
+</button>
+</div>
+<!-- PAD 3: TOM 1 (Row 2, Left | Key D) -->
+<div class="drum-pad-wrapper flex justify-center items-center">
+<button aria-label="Tom 1 (Key D)" class="drum-pad pad-amber group relative w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-full drum-pad-chassis p-2.5 focus:outline-none cursor-pointer" data-key="D" data-note="tom1" id="pad-D">
+<div class="w-full h-full rounded-full drum-membrane flex flex-col items-center justify-between p-3.5 sm:p-5 border-2 border-outline-variant/50 group-hover:border-tertiary-fixed-dim/70 transition-colors relative overflow-hidden">
+<div class="drum-flash-highlight absolute inset-0 bg-tertiary-fixed-dim rounded-full pointer-events-none"></div>
+<div class="drum-ripple text-tertiary-fixed-dim" id="ripple-D"></div>
+<div class="w-full flex justify-between items-center z-10">
+<span class="text-label-sm font-label-sm text-tertiary-fixed-dim tracking-wider font-semibold">AMBER-03</span>
+<span class="pad-badge px-2 py-0.5 rounded-full bg-surface-container-high border border-tertiary-fixed-dim/50 text-tertiary-fixed-dim text-label-sm font-label-sm font-bold shadow-[0_0_6px_rgba(255,186,38,0.35)] transition-all">
+              D
+            </span>
+</div>
+<div class="flex flex-col items-center justify-center z-10">
+<div class="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-tertiary-fixed-dim/20 border border-tertiary-fixed-dim flex items-center justify-center mb-1 shadow-[0_0_8px_#ffba26]">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></div>
+</div>
+<span class="text-headline-md font-headline-md sm:text-headline-lg sm:font-headline-lg font-bold tracking-wider text-on-surface group-hover:text-tertiary-fixed-dim transition-colors">
+              TOM 1
+            </span>
+</div>
+<div class="z-10 flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant font-medium">
+<span>HI-RES: 160Hz</span>
+</div>
+</div>
+</button>
+</div>
+<!-- PAD 4: TOM 2 (Row 2, Right | Key J) -->
+<div class="drum-pad-wrapper flex justify-center items-center">
+<button aria-label="Tom 2 (Key J)" class="drum-pad pad-peach group relative w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-full drum-pad-chassis p-2.5 focus:outline-none cursor-pointer" data-key="J" data-note="tom2" id="pad-J">
+<div class="w-full h-full rounded-full drum-membrane flex flex-col items-center justify-between p-3.5 sm:p-5 border-2 border-outline-variant/50 group-hover:border-tertiary-fixed/70 transition-colors relative overflow-hidden">
+<div class="drum-flash-highlight absolute inset-0 bg-tertiary-fixed rounded-full pointer-events-none"></div>
+<div class="drum-ripple text-tertiary-fixed" id="ripple-J"></div>
+<div class="w-full flex justify-between items-center z-10">
+<span class="text-label-sm font-label-sm text-tertiary-fixed tracking-wider font-semibold">FLOOR-04</span>
+<span class="pad-badge px-2 py-0.5 rounded-full bg-surface-container-high border border-tertiary-fixed/50 text-tertiary-fixed text-label-sm font-label-sm font-bold shadow-[0_0_6px_rgba(255,222,169,0.35)] transition-all">
+              J
+            </span>
+</div>
+<div class="flex flex-col items-center justify-center z-10">
+<div class="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-tertiary-fixed/20 border border-tertiary-fixed flex items-center justify-center mb-1 shadow-[0_0_8px_#ffdea9]">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed"></div>
+</div>
+<span class="text-headline-md font-headline-md sm:text-headline-lg sm:font-headline-lg font-bold tracking-wider text-on-surface group-hover:text-tertiary-fixed transition-colors">
+              TOM 2
+            </span>
+</div>
+<div class="z-10 flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant font-medium">
+<span>MID-RES: 110Hz</span>
+</div>
+</div>
+</button>
+</div>
+<!-- PAD 5: HI-HAT (Row 3, Left | Key K) -->
+<div class="drum-pad-wrapper flex justify-center items-center">
+<button aria-label="Hi-Hat (Key K)" class="drum-pad pad-mint group relative w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-full drum-pad-chassis p-2.5 focus:outline-none cursor-pointer" data-key="K" data-note="hihat" id="pad-K">
+<div class="w-full h-full rounded-full drum-membrane flex flex-col items-center justify-between p-3.5 sm:p-5 border-2 border-outline-variant/50 group-hover:border-primary-fixed/70 transition-colors relative overflow-hidden">
+<div class="drum-flash-highlight absolute inset-0 bg-primary-fixed rounded-full pointer-events-none"></div>
+<div class="drum-ripple text-primary-fixed" id="ripple-K"></div>
+<div class="w-full flex justify-between items-center z-10">
+<span class="text-label-sm font-label-sm text-primary-fixed tracking-wider font-semibold">MINT-05</span>
+<span class="pad-badge px-2 py-0.5 rounded-full bg-surface-container-high border border-primary-fixed/50 text-primary-fixed text-label-sm font-label-sm font-bold shadow-[0_0_6px_rgba(125,244,255,0.35)] transition-all">
+              K
+            </span>
+</div>
+<div class="flex flex-col items-center justify-center z-10">
+<div class="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-primary-fixed/20 border border-primary-fixed flex items-center justify-center mb-1 shadow-[0_0_8px_#7df4ff]">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></div>
+</div>
+<span class="text-headline-md font-headline-md sm:text-headline-lg sm:font-headline-lg font-bold tracking-wider text-on-surface group-hover:text-primary-fixed transition-colors">
+              HI-HAT
+            </span>
+</div>
+<div class="z-10 flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant font-medium">
+<span>CLOSED: CHOKE</span>
+</div>
+</div>
+</button>
+</div>
+<!-- PAD 6: CRASH (Row 3, Right | Key L) -->
+<div class="drum-pad-wrapper flex justify-center items-center">
+<button aria-label="Crash Cymbal (Key L)" class="drum-pad pad-rose group relative w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 rounded-full drum-pad-chassis p-2.5 focus:outline-none cursor-pointer" data-key="L" data-note="crash" id="pad-L">
+<div class="w-full h-full rounded-full drum-membrane flex flex-col items-center justify-between p-3.5 sm:p-5 border-2 border-outline-variant/50 group-hover:border-secondary-fixed/70 transition-colors relative overflow-hidden">
+<div class="drum-flash-highlight absolute inset-0 bg-secondary-fixed rounded-full pointer-events-none"></div>
+<div class="drum-ripple text-secondary-fixed" id="ripple-L"></div>
+<div class="w-full flex justify-between items-center z-10">
+<span class="text-label-sm font-label-sm text-secondary-fixed tracking-wider font-semibold">CYMB-06</span>
+<span class="pad-badge px-2 py-0.5 rounded-full bg-surface-container-high border border-secondary-fixed/50 text-secondary-fixed text-label-sm font-label-sm font-bold shadow-[0_0_6px_rgba(255,217,225,0.35)] transition-all">
+              L
+            </span>
+</div>
+<div class="flex flex-col items-center justify-center z-10">
+<div class="w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full bg-secondary-fixed/20 border border-secondary-fixed flex items-center justify-center mb-1 shadow-[0_0_8px_#ffd9e1]">
+<div class="w-1.5 h-1.5 rounded-full bg-secondary-fixed"></div>
+</div>
+<span class="text-headline-md font-headline-md sm:text-headline-lg sm:font-headline-lg font-bold tracking-wider text-on-surface group-hover:text-secondary-fixed transition-colors">
+              CRASH
+            </span>
+</div>
+<div class="z-10 flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant font-medium">
+<span>SUS: 18 INCH</span>
+</div>
+</div>
+</button>
+</div>
+</div>
+<!-- MASTER CONTROLS & VU LEVEL METERS SECTION -->
+<div class="w-full max-w-2xl bg-surface-container-lowest/80 border border-outline-variant/70 rounded-xl p-3 sm:p-4 mt-4 backdrop-blur-md shadow-2xl">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+<!-- Fader & Label -->
+<div class="w-full sm:flex-1 flex flex-col gap-1.5">
+<div class="flex justify-between items-center">
+<span class="text-label-md font-label-md tracking-wider text-on-surface-variant flex items-center gap-2">
+<span class="w-2 h-2 rounded-sm bg-primary-container"></span>
+            MASTER VOLUME
+          </span>
+<span class="text-label-lg font-label-lg text-primary-container font-bold tracking-widest bg-surface-container-high px-2 py-0.5 rounded border border-outline-variant" id="volume-readout">
+            80%
+          </span>
+</div>
+<div class="relative flex items-center w-full">
+<input class="w-full h-2 bg-surface-container-high rounded-lg appearance-none cursor-pointer border border-outline-variant/50 focus:outline-none focus:border-primary-container" id="master-volume" max="100" min="0" type="range" value="80"/>
+</div>
+</div>
+<!-- VU Stereo Level Meter -->
+<div class="flex items-center gap-3 bg-surface-container px-3 py-2 rounded-lg border border-outline-variant/70 self-stretch sm:self-auto justify-center">
+<div class="flex flex-col gap-0.5">
+<span class="text-label-sm font-label-sm text-on-surface-variant text-center font-bold">L</span>
+<div class="flex gap-0.5 items-end h-8 w-16 bg-surface-container-lowest p-1 rounded border border-outline-variant/50" id="meter-l">
+<span class="meter-bar w-1 bg-primary-container/20 rounded-t h-2 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-primary-container/20 rounded-t h-3 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-primary-container/20 rounded-t h-4 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-primary-container/20 rounded-t h-5 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-primary-fixed/20 rounded-t h-6 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-secondary-container/20 rounded-t h-7 transition-all duration-75"></span>
+</div>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-label-sm font-label-sm text-on-surface-variant text-center font-bold">R</span>
+<div class="flex gap-0.5 items-end h-8 w-16 bg-surface-container-lowest p-1 rounded border border-outline-variant/50" id="meter-r">
+<span class="meter-bar w-1 bg-primary-container/20 rounded-t h-2 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-primary-container/20 rounded-t h-3 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-primary-container/20 rounded-t h-4 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-primary-container/20 rounded-t h-5 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-primary-fixed/20 rounded-t h-6 transition-all duration-75"></span>
+<span class="meter-bar w-1 bg-secondary-container/20 rounded-t h-7 transition-all duration-75"></span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BOTTOM PERFORMANCE STATUS BAR -->
+<footer class="fixed bottom-0 left-0 w-full z-50 flex justify-between items-center px-4 h-12 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/60">
+<div class="flex items-center gap-1.5 overflow-x-auto py-1 w-full justify-around sm:justify-start sm:gap-3">
+<button class="flex items-center justify-center gap-1.5 px-3 py-1 text-on-surface-variant rounded border border-outline-variant hover:bg-surface-container hover:text-primary-container transition-colors active:scale-95 duration-75 text-label-md font-label-md">
+<span class="material-symbols-outlined text-[16px]">graphic_eq</span>
+<span>CHOKE</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 px-3 py-1 text-on-surface-variant rounded border border-outline-variant hover:bg-surface-container hover:text-primary-container transition-colors active:scale-95 duration-75 text-label-md font-label-md">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+<span>PITCH -1</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 px-3 py-1 text-on-surface-variant rounded border border-outline-variant hover:bg-surface-container hover:text-primary-container transition-colors active:scale-95 duration-75 text-label-md font-label-md">
+<span class="material-symbols-outlined text-[16px]">repeat</span>
+<span>ROLL</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 px-3 py-1 bg-surface-container-high text-primary-container rounded border border-primary-container hover:bg-surface-container transition-colors active:scale-95 duration-75 text-label-md font-label-md font-semibold">
+<span class="material-symbols-outlined text-[16px]">speed</span>
+<span>VELOCITY: HARD</span>
+</button>
+</div>
+</footer>
+<!-- COMPLETE HIGH-FIDELITY WEB AUDIO DRUM ENGINE -->
+<script>
+  // Persistent Audio Context & Nodes
+  let audioCtx = null;
+  let masterGain = null;
+  let distortionCurve = null;
+
+  // Sample cache for external files
+  const sampleBuffers = {};
+  const sampleFiles = {
+    'kick': 'sounds/kick.wav',
+    'snare': 'sounds/snare.wav',
+    'tom1': 'sounds/tom1.wav',
+    'tom2': 'sounds/tom2.wav',
+    'hihat': 'sounds/hihat.wav',
+    'crash': 'sounds/crash.wav'
+  };
+
+  // Distortion curve generator for kick punch warmth
+  function makeDistortionCurve(amount = 20) {
+    const k = typeof amount === 'number' ? amount : 20;
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+    for (let i = 0; i < n_samples; ++i) {
+      const x = (i * 2) / n_samples - 1;
+      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+    }
+    return curve;
+  }
+
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextClass();
+
+      // Master volume bus
+      masterGain = audioCtx.createGain();
+      const currentVal = parseFloat(document.getElementById('master-volume').value) / 100;
+      masterGain.gain.setValueAtTime(currentVal, audioCtx.currentTime);
+      masterGain.connect(audioCtx.destination);
+
+      distortionCurve = makeDistortionCurve(15);
+      preloadSamples();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  // Sample buffer loader with seamless procedural synthesis fallback
+  function preloadSamples() {
+    Object.entries(sampleFiles).forEach(([name, path]) => {
+      fetch(path)
+        .then(res => {
+          if (!res.ok) throw new Error('Not found');
+          return res.arrayBuffer();
+        })
+        .then(buf => audioCtx.decodeAudioData(buf))
+        .then(decoded => {
+          sampleBuffers[name] = decoded;
+        })
+        .catch(() => {
+          // File not present: silently fall back to synthetic engine
+          sampleBuffers[name] = null;
+        });
+    });
+  }
+
+  // PROCEDURAL HIGH-FIDELITY SYNTHESIS VOICES
+
+  // 1. KICK: Punchy pitch-drop (140Hz -> 35Hz in 0.08s) + transient click + soft saturation
+  function synthKick(ctx, now) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const waveShaper = ctx.createWaveShaper();
+
+    waveShaper.curve = distortionCurve;
+    waveShaper.oversample = '2x';
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(35, now + 0.08);
+
+    gain.gain.setValueAtTime(1.0, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+    // Click transient for attack snap
+    const clickOsc = ctx.createOscillator();
+    const clickGain = ctx.createGain();
+    clickOsc.type = 'square';
+    clickOsc.frequency.setValueAtTime(300, now);
+    clickGain.gain.setValueAtTime(0.4, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+
+    clickOsc.connect(clickGain);
+    clickGain.connect(masterGain);
+    clickOsc.start(now);
+    clickOsc.stop(now + 0.02);
+
+    osc.connect(waveShaper);
+    waveShaper.connect(gain);
+    gain.connect(masterGain);
+
+    osc.start(now);
+    osc.stop(now + 0.38);
+  }
+
+  // 2. SNARE: Crisp white noise burst (highpassed 800Hz) + tone body (180Hz) + snappy decay
+  function synthSnare(ctx, now) {
+    // Body tone
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(75, now + 0.12);
+
+    oscGain.gain.setValueAtTime(0.7, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+    osc.connect(oscGain);
+    oscGain.connect(masterGain);
+    osc.start(now);
+    osc.stop(now + 0.14);
+
+    // Noise burst
+    const length = Math.floor(ctx.sampleRate * 0.22);
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.95;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(800, now);
+
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.9, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(masterGain);
+
+    noise.start(now);
+    noise.stop(now + 0.22);
+  }
+
+  // 3 & 4. TOMS: Resonant pitch-dropped sines
+  function synthTom(ctx, now, startFreq, endFreq, dropTime, decayTime) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, now + dropTime);
+
+    gain.gain.setValueAtTime(0.85, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + decayTime);
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+
+    osc.start(now);
+    osc.stop(now + decayTime);
+  }
+
+  // 5. HI-HAT: Metallic bandpass filtered noise burst with razor-sharp 0.05s choke envelope
+  function synthHiHat(ctx, now) {
+    const length = Math.floor(ctx.sampleRate * 0.06);
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.setValueAtTime(8500, now);
+    bpf.Q.setValueAtTime(4.0, now);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.75, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+    noise.connect(bpf);
+    bpf.connect(gain);
+    gain.connect(masterGain);
+
+    noise.start(now);
+    noise.stop(now + 0.06);
+  }
+
+  // 6. CRASH: Wide-spectrum shimmering metallic noise with natural 1.2s decay
+  function synthCrash(ctx, now) {
+    const length = Math.floor(ctx.sampleRate * 1.3);
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const hpf = ctx.createBiquadFilter();
+    hpf.type = 'highpass';
+    hpf.frequency.setValueAtTime(4200, now);
+
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.setValueAtTime(7500, now);
+    bpf.Q.setValueAtTime(1.2, now);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.75, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+    noise.connect(hpf);
+    hpf.connect(bpf);
+    bpf.connect(gain);
+    gain.connect(masterGain);
+
+    noise.start(now);
+    noise.stop(now + 1.25);
+  }
+
+  // Overlapping polyphonic sound trigger with sample or procedural fallback
+  function playSound(type) {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+
+    if (sampleBuffers[type]) {
+      const src = ctx.createBufferSource();
+      src.buffer = sampleBuffers[type];
+      src.connect(masterGain);
+      src.start(now);
+    } else {
+      switch (type) {
+        case 'kick':
+          synthKick(ctx, now);
+          triggerVUMeter(0.95);
+          break;
+        case 'snare':
+          synthSnare(ctx, now);
+          triggerVUMeter(0.85);
+          break;
+        case 'tom1':
+          synthTom(ctx, now, 180, 85, 0.15, 0.32);
+          triggerVUMeter(0.7);
+          break;
+        case 'tom2':
+          synthTom(ctx, now, 120, 55, 0.22, 0.38);
+          triggerVUMeter(0.75);
+          break;
+        case 'hihat':
+          synthHiHat(ctx, now);
+          triggerVUMeter(0.5);
+          break;
+        case 'crash':
+          synthCrash(ctx, now);
+          triggerVUMeter(0.88);
+          break;
+      }
+    }
+  }
+
+  // PHYSICAL 3D PAD ANIMATIONS & STRIKE ROUTER
+  const padElements = {
+    'A': document.getElementById('pad-A'),
+    'S': document.getElementById('pad-S'),
+    'D': document.getElementById('pad-D'),
+    'J': document.getElementById('pad-J'),
+    'K': document.getElementById('pad-K'),
+    'L': document.getElementById('pad-L')
+  };
+
+  const keyToPad = {
+    'A': 'pad-A',
+    'S': 'pad-S',
+    'D': 'pad-D',
+    'J': 'pad-J',
+    'K': 'pad-K',
+    'L': 'pad-L'
+  };
+
+  const activeKeyStates = new Set();
+  const padResetTimers = {};
+
+  function triggerPad(keyChar) {
+    const padId = keyToPad[keyChar];
+    if (!padId) return;
+    const pad = document.getElementById(padId);
+    if (!pad) return;
+
+    const note = pad.getAttribute('data-note');
+    playSound(note);
+
+    // Apply physical depressed state
+    pad.classList.add('pad-pressed');
+
+    // Trigger fast outward ripple ring
+    const ripple = document.getElementById(`ripple-${keyChar}`);
+    if (ripple) {
+      ripple.classList.remove('active-ripple');
+      void ripple.offsetWidth; // Force CSS reflow
+      ripple.classList.add('active-ripple');
+      setTimeout(() => {
+        ripple.classList.remove('active-ripple');
+      }, 160);
+    }
+
+    // Auto-return timer for pointer/keyboard hits
+    if (padResetTimers[keyChar]) clearTimeout(padResetTimers[keyChar]);
+    padResetTimers[keyChar] = setTimeout(() => {
+      if (!activeKeyStates.has(keyChar)) {
+        pad.classList.remove('pad-pressed');
+      }
+    }, 120);
+  }
+
+  function releasePad(keyChar) {
+    activeKeyStates.delete(keyChar);
+    const padId = keyToPad[keyChar];
+    if (!padId) return;
+    const pad = document.getElementById(padId);
+    if (pad) {
+      pad.classList.remove('pad-pressed');
+    }
+  }
+
+  // POINTER & TOUCH EVENTS (with deduplication)
+  document.querySelectorAll('.drum-pad').forEach(pad => {
+    const key = pad.getAttribute('data-key');
+
+    pad.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      getAudioContext();
+      triggerPad(key);
+    });
+
+    pad.addEventListener('pointerup', (e) => {
+      e.preventDefault();
+      releasePad(key);
+    });
+
+    pad.addEventListener('pointerleave', () => {
+      releasePad(key);
+    });
+
+    pad.addEventListener('pointercancel', () => {
+      releasePad(key);
+    });
+  });
+
+  // KEYBOARD CONTROLS (Case-insensitive, e.repeat filtered, Caps Lock safe)
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    const key = e.key.toUpperCase();
+    if (keyToPad[key]) {
+      e.preventDefault();
+      getAudioContext();
+      activeKeyStates.add(key);
+      triggerPad(key);
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    const key = e.key.toUpperCase();
+    if (keyToPad[key]) {
+      e.preventDefault();
+      releasePad(key);
+    }
+  });
+
+  // MASTER VOLUME SLIDER (smooth gain updates without cutting audio)
+  const volumeSlider = document.getElementById('master-volume');
+  const volumeReadout = document.getElementById('volume-readout');
+
+  volumeSlider.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value, 10);
+    volumeReadout.textContent = `${val}%`;
+    if (masterGain && audioCtx) {
+      masterGain.gain.setValueAtTime(val / 100, audioCtx.currentTime);
+    }
+  });
+
+  // STEREO VU METER ANIMATION
+  function triggerVUMeter(intensity) {
+    const barsL = document.querySelectorAll('#meter-l .meter-bar');
+    const barsR = document.querySelectorAll('#meter-r .meter-bar');
+    const count = Math.min(barsL.length, Math.max(1, Math.ceil(intensity * barsL.length)));
+
+    barsL.forEach((bar, idx) => {
+      if (idx < count) {
+        bar.classList.remove('opacity-20');
+        bar.classList.add('opacity-100');
+      } else {
+        bar.classList.remove('opacity-100');
+        bar.classList.add('opacity-20');
+      }
+    });
+
+    barsR.forEach((bar, idx) => {
+      if (idx < count) {
+        bar.classList.remove('opacity-20');
+        bar.classList.add('opacity-100');
+      } else {
+        bar.classList.remove('opacity-100');
+        bar.classList.add('opacity-20');
+      }
+    });
+
+    setTimeout(() => {
+      barsL.forEach(bar => { bar.classList.remove('opacity-100'); bar.classList.add('opacity-20'); });
+      barsR.forEach(bar => { bar.classList.remove('opacity-100'); bar.classList.add('opacity-20'); });
+    }, 150);
+  }
+
+  // AUDIO INITIALIZATION BUTTON
+  document.getElementById('audio-init-btn')?.addEventListener('click', () => {
+    getAudioContext();
+    const status = document.getElementById('engine-status');
+    if (status) {
+      status.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-primary-container shadow-[0_0_6px_#00f0ff]"></span> ONLINE`;
+    }
+  });
+</script>
+</body></html>

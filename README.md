@@ -1,37 +1,40 @@
 # drummersource101
 
-Source workspace for the PC-based virtual drumming kit.
+Source workspace for the PC-based virtual drumming project drummer101.
 
 ## Overview
 
-drummersource101 contains the development source for the drummer101 project. The project focuses on turning a PC keyboard into a simple virtual drum kit while keeping the interaction fast and accessible.
+drummersource101 contains the development source associated with drummer101. The project explores how a normal PC keyboard can be used as a simple virtual percussion interface while keeping the interaction quick and accessible.
 
-## Goals
+This repository is focused on development source and experimentation rather than being a separate product from drummer101.
+
+## Relationship to drummer101
+
+```text
+drummersource101
+      |
+      +-- Source and development workspace
+                    |
+                    v
+               drummer101
+                    |
+                    +-- PC virtual drumming experience
+```
+
+## Development Goals
 
 - Keyboard-first drumming
 - Simple browser interaction
 - Low-friction setup
 - Clear visual feedback
 - Easy experimentation with virtual percussion
+- A small codebase that can be extended without unnecessary complexity
 
-## Relationship to drummer101
+## Areas for Continued Work
 
-```text
-drummersource101
-      │
-      └── Source / development workspace
-                    │
-                    ▼
-               drummer101
-                    │
-                    └── PC virtual drumming experience
-```
+Potential development areas include:
 
-## Development Direction
-
-Possible areas for continued work include:
-
-- More drum sounds
+- More drum and percussion sounds
 - Custom key bindings
 - Volume controls
 - Visual hit animations
@@ -40,7 +43,7 @@ Possible areas for continued work include:
 
 ## Documentation
 
-The README is intentionally focused on the purpose of this repository. Implementation-specific instructions should follow the current source tree so they remain accurate as the project evolves.
+The README focuses on the role of this repository in the drummer101 project. Implementation-specific setup instructions should follow the current source tree so they remain accurate as the project changes.
 
 ## Creator
 

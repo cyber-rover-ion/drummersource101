@@ -1,39 +1,37 @@
 # drummersource101
 
-Development source for the drummer101 virtual drumming project.
+The development source for the drummer101 browser-based virtual drum kit.
 
 ## Overview
 
-This repository contains the source workspace for drummer101, a browser-based project that uses a PC keyboard as a virtual percussion interface.
-
-The repository includes the main HTML implementation and a screen preview used during development.
+This repository contains the development workspace for a keyboard-driven percussion interface. It supports experimentation with browser audio, input handling, and the visual presentation of a virtual drum kit.
 
 ## Development Focus
 
-- Keyboard-driven drum interaction
+- Keyboard-controlled drum interaction
 - Browser-based audio controls
-- Simple virtual percussion interface
-- Visual feedback
-- Small and accessible implementation
+- Visual feedback for user input
+- A compact, accessible interface
+- Iterative development and experimentation
 
 ## Relationship to drummer101
 
-drummersource101 is the development source for the drummer101 project rather than a separate product.
-
 ```text
 drummersource101
-      |
-      v
-drummer101
-      |
-      v
-PC keyboard virtual drum kit
+        |
+        v
+  Virtual Drum Kit
+        |
+        v
+Keyboard-based play
 ```
 
-## Scope
+This repository is the development source for the related drummer101 project, rather than a separate product.
 
-The repository is intended for development and experimentation with the virtual drum interface.
+## Usage
 
-## Creator
+Open the project's HTML entry point in a modern browser and check the current implementation for supported keyboard mappings and audio behavior.
 
-Made by **JebinTech**.
+## Maintainer
+
+**JebinTech**

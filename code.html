@@ -901,7 +901,13 @@
 
   // KEYBOARD CONTROLS (Case-insensitive, e.repeat filtered, Caps Lock safe)
   window.addEventListener('keydown', (e) => {
-    if (e.repeat) return;
+    const target = e.target;
+    const isTextEntry = target instanceof HTMLElement && (
+      target.isContentEditable ||
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+    );
+    if (e.repeat || isTextEntry) return;
+
     const key = e.key.toUpperCase();
     if (keyToPad[key]) {
       e.preventDefault();
@@ -914,7 +920,6 @@
   window.addEventListener('keyup', (e) => {
     const key = e.key.toUpperCase();
     if (keyToPad[key]) {
-      e.preventDefault();
       releasePad(key);
     }
   });

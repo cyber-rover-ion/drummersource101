@@ -924,6 +924,15 @@
     }
   });
 
+  // Prevent visually stuck pads if a key is released while the window is unfocused.
+  window.addEventListener('blur', () => {
+    activeKeyStates.forEach(releasePad);
+    activeKeyStates.clear();
+    Object.values(keyToPad).forEach((padId) => {
+      document.getElementById(padId)?.classList.remove('pad-pressed');
+    });
+  });
+
   // MASTER VOLUME SLIDER (smooth gain updates without cutting audio)
   const volumeSlider = document.getElementById('master-volume');
   const volumeReadout = document.getElementById('volume-readout');

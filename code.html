@@ -919,6 +919,13 @@
     }
   });
 
+  // Release any held keys if the browser loses focus; otherwise a pad can
+  // remain visually or audibly held after switching tabs or applications.
+  window.addEventListener('blur', () => {
+    for (const key of activeKeyStates) releasePad(key);
+    activeKeyStates.clear();
+  });
+
   // MASTER VOLUME SLIDER (smooth gain updates without cutting audio)
   const volumeSlider = document.getElementById('master-volume');
   const volumeReadout = document.getElementById('volume-readout');
